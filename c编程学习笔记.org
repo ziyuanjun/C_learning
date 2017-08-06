@@ -1,0 +1,120 @@
+# -*- eval: (setq org-download-image-dir (file-name-sans-extension (buffer-name))); -*-
+# -*- org-export-babel-evaluate: nil; -*-
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="../orgstyle.css"/>
+#+OPTIONS: ':nil *:t -:t ::t <:t H:3 \n:t arch:headline author:t c:nil S:nil -:nil
+#+OPTIONS: creator:nil d:(not "En") date:t e:t email:nil f:t inline:t
+#+OPTIONS: num:t p:nil pri:nil prop:nil stat:t tags:t tasks:t tex:t timestamp:t
+#+OPTIONS: title:t toc:t todo:t |:t 
+#+OPTIONS: ^:{}
+#+LATEX_CLASS: ctexart
+#+STARTUP: entitiespretty:t
+#+TITLE: C 语言学习笔记
+#+SELECT_TAGS: export
+#+EXCLUDE_TAGS: noexport
+#+CREATOR: Emacs 26.0.50.2 (Org mode 9.0.4)
+
+学C语言不可能不去了解底层计算机体系结构和操作系统的原理
+
+* 头文件和库函数
+程序第一行的#号和 include 表示包含一个头文件(这些头文件通常位于 /usr/include 目录下)。
+
+头文件中声明了我们程序中使用的库函数,根据先声明后使用的原则, 要使用 printf 函数必须包含 stdio.h ,要使用数学函数必须包含 math.h ,如果什么库函数都不使用就不必包含任何头文件。
+
+使用 math.h 中声明的库函数有一点特殊之处： gcc 命令行必须加 -lm 选项,因为数学函数位于 libm.so 库文件中(这些库文件通常位于 /lib 目录下), -lm 选项告诉编译器，程序中用到的数学函数要到这个库文件里找。
+
+大部分库函数(例如 printf )位于 libc.so 库文件中，使用 libc.so 中的库函数在编译时不需要加 -lc 选项，这是 gcc 的默认选项。
+
+一些函数对应的头文件
+| 函数   | 头文件   |
+|--------+----------|
+| rand   | stdlib.h |
+| printf | stdio.h  |
+| sin 等 | math.h   |
+| time   | time.h   |
+
+** 伪随机数
+C标准库中生成伪随机数的是 rand 函数,使用这个函数需要包含头文件 stdlib.h ,它没有参数,返回值是一个介于0和 RAND_MAX 之间的接近均匀分布的整数。RAND_MAX 是该头文件中定义的一个常量,在不同的平台上有不同的取值,但可以肯定它是一个非常大的整数。
+
+伪随机数,是用一套确定的公式基于某个初值算出来的,只要初值相同,随后的整个数列就都相同。实际应用中不可能使用每次都一样的随机数,例如开发一个麻将游戏,每次运行这个游戏摸到的牌不应该是一样的。因此,C标准库允许我们自己指定一个初值,然后在此基础上生成伪随机数,这个初值称为Seed,可以用 srand 函数指定Seed。通常我们通过别的途径得到一个不确定的数作为Seed,例如调用 time 函数得到当前系统时间距1970年1月1日00:00:00 [18] 的秒数,然后传给 srand :
+srand(time(NULL));
+然后再调用 rand ,得到的随机数就和刚才完全不同了。调用 time 函数需要包含头文件 time.h ,这里的 NULL 表示空指针。
+
+* C标准库
+C标准库定义了一组标准头文件,每个头文件中包含一些相关的函数、变量、类型声明和宏定义。
+
+要在一个平台上支持C语言,不仅要实现C编译器,还要实现C标准库,这样的实现才算符合C标准。不符合C标准的实现也是存在的,例如很多单片机的C语言开发工具中只有C编译器而没有完整的C标准库。
+
+Linux平台上最广泛使用的C函数库是 glibc。
+
+* 程序如何执行
+  编译器的工作分为两个阶段,先是预处理(Preprocess)阶段,然后才是编译阶段,用 gcc 的 -E 选项可以看到预处理之后、编译之前的程序。
+gcc -E main.c
+cpp main.c 命令也可以达到同样的效果,只做预处理而不编译, cpp 表示C preprocessor。
+** #define
+用 #define 可以定义一个常量：
+#define N 20
+像 #include 和 #define 这种以#号开头的行称为预处理指示(Preprocessing Directive)。
+
+- define 不仅用于定义常量,也可以定义更复杂的语法结构,称为宏(Macro)定义。
+- define 定义是在预处理阶段处理的,而枚举是在编译阶段处理的。
+  
+在预处理阶段,如果一行以#号开头,后面跟 include 或 define ,预处理器就认为这是一条预处理指示,除此之外出现在其它地方的 include 或 define 预处理器并不关心,只是当成普通标识符交给编译阶段去处理。
+
+* 用户命令和系统管理命令
+区分用户命令和系统管理命令,用户命令通常位于 /bin 和 /usr/bin 目录,系统管理命令通常位于 /sbin 和 /usr/sbin 目录。
+一般用户可以执行用户命令,而执行系统管理命令经常需要 root 权限。
+
+* 初始化全局变量
+程序开始运行时要用适当的值来初始化全局变量,所以初始值必须保存在编译生成的可执行文件中,因此初始值在编译时就要计算出来。
+
+而局部变量的初始化是在程序运行时实现的。请注意区分编译时和运行时这两个概念。
+为了简化编译器的实现,C语言从语法上规定全局变量只能用常量表达式来初始化。
+
+如果全局变量在定义时不初始化则初始值是0,如果局部变量在定义时不初始化则初始值是不确定的。
+所以,局部变量在使用之前一定要先赋值。
+
+* C语法
+** for
+  C 正常写法：
+  #+BEGIN_SRC c
+    int i;
+    for(i = 1; i <= n; ++i)
+  #+END_SRC
+  C99规定了一种新的 for 循环语法：
+  #+BEGIN_SRC c
+  for(int i = 1; i <= n; i++)
+  #+END_SRC
+  这个程序用 gcc 编译要加上选项 -std=c99 。这种语法也是从C++借鉴的,考虑到兼容性不建议使用这种写法。
+** complex
+C99已经定义了复数类型 _Complex 。如果包含C标准库的头文件 complex.h ,也可以用 complex 做类型名。
+** 数组
+对于数组类型有一条特殊规则:数组类型做右值使用时,自动转换成指向数组首元素的指针。
+
+** 字符串
+字符串字面值是只读的,不允许修改。
+字符串字面值还有一点和数组名类似,做右值使用时自动转换成指向首元素的指针。
+** ++和--
+++称为前缀自增运算符(Prefix Increment Operator),类似地,--称为前缀自减运算符(Prefix Decrement Operator)
+
+++i 相当于 i = i + 1 
+--i 相当于 i = i - 1
+
+把 ++i 这个表达式看作一个函数调用,除了传入一个参数返回一个值(等于参数值加1)之外,还产生一个Side Effect,就是把变量 i 的值增加了1。
+
+
+++ 和 -- 运算符用在变量后面称为后缀自增运算符(Postfix Increment Operator)和后缀自减运算符(Postfix Decrement Operator)。
+i++把变量 i 的值增加了1,它和 ++i 的区别就在于返回值不同，返回值还是未加1的i。
+同理, --i 返回减1之后的值,而 i-- 返回减1之前的值
+
+可以这样理解：
+a[++i]=10; 相当于 i=i+1;a[i]=10; (加号在前，先加后用)
+a[i++]=10; 相当于 a[i]=10;i=i+1; (加号在后，先用后加)
+
+* makefile
+ 如何理解[fn:1]
+ $(MAKE) -e -C dir
+
+* Footnotes
+
+[fn:1] http://blog.csdn.net/davion_zhang/article/details/9716869
+
