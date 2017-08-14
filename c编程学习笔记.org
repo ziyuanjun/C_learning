@@ -4,7 +4,7 @@
 #+OPTIONS: ':nil *:t -:t ::t <:t H:3 \n:t arch:headline author:t c:nil S:nil -:nil
 #+OPTIONS: creator:nil d:(not "En") date:t e:t email:nil f:t inline:t
 #+OPTIONS: num:t p:nil pri:nil prop:nil stat:t tags:t tasks:t tex:t timestamp:t
-#+OPTIONS: title:t toc:t todo:t |:t 
+#+OPTIONS: title:t toc:t todo:t |:t
 #+OPTIONS: ^:{}
 #+LATEX_CLASS: ctexart
 #+STARTUP: entitiespretty:t
@@ -14,6 +14,11 @@
 #+CREATOR: Emacs 26.0.50.2 (Org mode 9.0.4)
 
 学C语言不可能不去了解底层计算机体系结构和操作系统的原理
+
+
+* linux系统编程
+** TCP/IP协议基础
+TCP/IP网络协议栈分为应用层(Application)、传输层(Transport)、网络层(Network)和链路层(Link)四层。
 
 * 声明和定义
   C语言中的声明(Declaration)有变量声明、函数声明和类型声明三种。如果一个变量或函数的声明要求编译器为它分配存储空间,那么也可以称为定义(Definition),因此定义是声明的一种。从结构体开始我们会看到类型声明,声明一个类型是不分配存储空间的,但似乎叫“类型定义”听起来也不错,所以在有些书中“类型定义”和“类型声明”表示相同的含义。
@@ -136,12 +141,12 @@
        #else
        /* all others */
        #error UNKNOWN TARGET MACHINE
-       #endif     
+       #endif
        #+END_SRC
        #ifdef 或 #if 可以嵌套使用,但预处理指示通常都顶头写不缩进,为了区分嵌套的层次,可以在 #endif 处用注释写清楚它结束的是哪个 #if 或 ifdef。
      - 不用 #define 定义宏
        1. 编译命令行加上选项 -DNDEBUG 就相当于在源文件开头定义了 NDEBUG 宏。
-       2. 
+       2.
 *** 查看预处理
     gcc 的 -E 选项可以看到预处理之后、编译之前的程序；
     cpp main.c 命令也可以达到只做预处理而不编译, cpp 表示C preprocessor。
@@ -214,7 +219,7 @@
 ** ++和--
    ++称为前缀自增运算符(Prefix Increment Operator),类似地,--称为前缀自减运算符(Prefix Decrement Operator)
 
-   ++i 相当于 i = i + 1 
+   ++i 相当于 i = i + 1
    --i 相当于 i = i - 1
 
    把 ++i 这个表达式看作一个函数调用,除了传入一个参数返回一个值(等于参数值加1)之外,还产生一个Side Effect,就是把变量 i 的值增加了1。
@@ -294,6 +299,21 @@
         #+END_SRC
         参数写成指针形式还是数组形式对编译器来说没区别,都表示这个参数是指针,之所以规定两种形式是为了给读代码的人提供有用的信息,如果这个参数指向一个元素,通常写成指针的形式,如果这个参数指向一串元素中的首元素,则经常写成数组的形式。
 
+    - 指针与const
+      const 限定符和指针结合起来常见的情况有以下几种。
+      #+BEGIN_SRC C
+      const int *a;
+      int const *a;
+      #+END_SRC
+      这两种写法是一样的, a 是一个指向 const int 型的指针, a 所指向的内存单元不可改写,所以 (*a)++ 是不允许的,但 a 可以改写,所以 a++ 是允许的。
+      #+BEGIN_SRC C
+      int * const a;
+      #+END_SRC
+      a 是一个指向 int 型的 const 指针, *a 是可以改写的,但 a 不允许改写。
+      #+BEGIN_SRC C
+      int const * const a;
+      #+END_SRC
+      a 是一个指向 const int 型的 const 指针,因此 *a 和 a 都不允许改写。
     - 指针与结构体
       首先定义一个结构体类型,然后定义这种类型的变量和指针:
       #+BEGIN_SRC C
@@ -329,12 +349,12 @@
       t 代表由10个 int 组成的数组类型, a 则是指向这种类型的指针。
     - 函数类型和函数指针类型
       函数类型和数组类型类似,做右值使用时自动转换成函数指针类型,所以可以直接赋给 f ,当然也可以加上 & 先取地址再赋给 f。
-    - 
+    -
 
 ** 建立UDP连接
    http://www.microhowto.info/howto/send_a_udp_datagram_in_c.html
-
-
+** 线程
+   线程库函数是由POSIX标准定义的,称为POSIX thread或者pthread。在Linux上线程函数位于 libpthread 共享库中,因此在编译时要加上 -lpthread 选项。
 * makefile
   make 命令会自动读取当前目录下的 Makefile 文件，完成相应的编译步骤。
 ** makefile 语法
@@ -414,7 +434,7 @@
       libsome.a: foo.o bar.o lose.o win.o
           ar r libsome.a $?
           ranlib libsome.a
-      #+END_EXAMPLE 
+      #+END_EXAMPLE
       这样,只有更新过的目标文件才需要重新打包到 libsome.a 中,没更新过的目标文件原本已经在 libsome.a 中了,不必重新打包。
     - $^:
       表示规则中的所有条件,组成一个列表,以空格分隔。
@@ -505,4 +525,3 @@
 [fn:2] http://www.tuicool.com/articles/YRRNrqe
 
 [fn:1] http://blog.csdn.net/davion_zhang/article/details/9716869
-
